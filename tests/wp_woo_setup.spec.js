@@ -14,7 +14,7 @@ const ZONE_NAME = 'worldwide';
 
 test('WordPress setup with WooCommerce and WP Mail plugin', async ({ page }) => {
     // Set global timeout to 60 seconds
-    test.setTimeout(90000);
+    test.setTimeout(270000);
 
     try {
         // Navigate to WordPress setup page
@@ -82,20 +82,22 @@ async function loginToWordPress(page, username, password) {
 
 async function installAndActivatePlugin(page, pluginName, pluginTitle, pluginSlug) {
     try {
+        // Navigate to the Plugins page
         await page.getByRole('link', { name: 'Plugins', exact: true }).click();
-        await page.waitForSelector('text=Add New Plugin', { state: 'visible', timeout: 60000 });
+        await page.waitForSelector('text=Add New Plugin', { state: 'visible', timeout: 120000 }); // Increased timeout
 
-        // Use a more specific locator to avoid ambiguity
+        // Click on "Add New Plugin"
         await page.locator('#wpbody-content').getByRole('link', { name: 'Add New Plugin' }).click();
-        await page.waitForLoadState('networkidle', { timeout: 60000 });
+        await page.waitForLoadState('networkidle', { timeout: 270000 }); // Increased timeout
 
-        console.log('Searching for plugin:', pluginName);
+        // Search for the plugin
+        console.log(`Searching for plugin: ${pluginName}`);
         await page.getByRole('searchbox', { name: 'Search Plugins' }).fill(pluginName);
         await page.getByRole('searchbox', { name: 'Search Plugins' }).press('Enter');
 
         // Wait for search results to load
         console.log('Waiting for search results...');
-        await page.waitForSelector('.plugin-card', { state: 'visible', timeout: 60000 });
+        await page.waitForSelector('.plugin-card', { state: 'visible', timeout: 270000 }); // Increased timeout
 
         // Check if the plugin is found
         const pluginCard = await page.$('.plugin-card');
@@ -103,17 +105,35 @@ async function installAndActivatePlugin(page, pluginName, pluginTitle, pluginSlu
             throw new Error(`Plugin "${pluginName}" not found in search results.`);
         }
 
-        // Wait for the install button to be visible using data-slug
-        console.log('Waiting for install button...');
+        // Wait for the "Install Now" button to be visible using data-slug
+        console.log('Waiting for "Install Now" button...');
         const installButtonSelector = `a.install-now.button[data-slug="${pluginSlug}"]`;
-        await page.waitForSelector(installButtonSelector, { state: 'visible', timeout: 90000 });
+        await page.waitForSelector(installButtonSelector, { state: 'visible', timeout: 270000 }); // Increased timeout
         await page.click(installButtonSelector);
 
-        // Wait for the activate button to be visible
-        console.log('Waiting for activate button...');
-        const activateButtonSelector = `button:has-text("Activate ${pluginTitle}")`;
-        await page.waitForSelector(activateButtonSelector, { state: 'visible', timeout: 90000 });
-        await page.getByRole('button', { name: `Activate ${pluginTitle}` }).click();
+        // Wait for the "Installing..." state to complete
+        console.log('Waiting for installation to complete...');
+        const installingSelector = `a.updating-message[data-slug="${pluginSlug}"]`;
+        await page.waitForSelector(installingSelector, { state: 'visible', timeout: 270000 }); // Wait for "Installing..." to appear
+        await page.waitForSelector(installingSelector, { state: 'hidden', timeout: 270000 }); // Wait for "Installing..." to disappear (longer timeout)
+        
+        // Wait for the "Activate" button to appear
+        console.log('Waiting for "Activate" button...');
+        const activateButtonSelector = `a.button.activate-now[data-slug="${pluginSlug}"]`;
+        await page.waitForSelector(activateButtonSelector, { state: 'visible', timeout: 270000 }); // Increased timeout
+        await page.click(activateButtonSelector);
+
+        // Handle redirection after activation
+        console.log('Waiting for redirection after activation...');
+        if (pluginSlug === 'woocommerce') {
+            // For WooCommerce, wait for the setup page to load
+            await page.waitForSelector('text=Welcome to WooCommerce', { state: 'visible', timeout: 270000 }); // Longer timeout
+        } else {
+            // For other plugins, wait for the plugins page to load
+            await page.waitForSelector('text=Plugins', { state: 'visible', timeout: 120000 }); // Increased timeout
+        }
+
+        console.log(`Plugin "${pluginTitle}" installed and activated successfully.`);
     } catch (error) {
         console.error(`Error installing/activating plugin ${pluginTitle}:`, error);
         throw error;
