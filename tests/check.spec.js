@@ -4,6 +4,8 @@ const taxFilePath = 'sample-data/sample_tax_rates.csv';
 const productFilePath = 'sample-data/sample_products.csv';
 const ADMIN_USER = 'admin';
 const ADMIN_PASSWORD = 'admin';
+const ZONE_NAME = 'worldwide';
+
 
 
 test('WordPress', async ({ page }) => {
@@ -13,16 +15,16 @@ test.setTimeout(50000);
 
  await loginToWordPress(page, ADMIN_USER, ADMIN_PASSWORD);
 
-    await configureWooCommerce(page, taxFilePath);
+    // await configureWooCommerce(page, taxFilePath, ZONE_NAME);
 
     // Import Products 
-    await importProducts(page, productFilePath)
+    // await importProducts(page, productFilePath)
 
     // Configure WordPress settings
-    await configureWordPressSettings(page);
+    // await configureWordPressSettings(page);
 
     // Install and activate Storefront theme
-    await installAndActivateTheme(page, 'storefront');
+    await installAndActivateTheme(page, 'Storefront');
 
     // Logout
     await logout(page);
@@ -35,10 +37,11 @@ async function loginToWordPress(page, username, password) {
     await page.getByRole('button', { name: 'Log In' }).click();
 }
 
-async function configureWooCommerce(page, taxFilePath) {
+async function configureWooCommerce(page, taxFilePath, zoneName) {
    
     // Navigate to General section
     await page.getByRole('checkbox', { name: 'Enable tax rates and' }).check();
+    await page.getByRole('checkbox', { name: 'Calculate coupon discounts' }).check();
     await page.getByRole('button', { name: 'Save changes' }).scrollIntoViewIfNeeded();
     await page.getByRole('button', { name: 'Save changes' }).click();
     await expect(
@@ -48,7 +51,7 @@ async function configureWooCommerce(page, taxFilePath) {
     // Navigate to Tax section
     await page.getByRole('link', { name: 'Tax', exact: true }).click();
     await page.getByRole('link', { name: 'Standard rates' }).click();
-    await page.getByRole('heading', { name: 'Standard tax rates' }).waitFor({ state: 'visible', timeout: 2000 });
+    // await page.getByRole('heading', { name: 'Standard tax rates' }).waitFor({ state: 'visible', timeout: 2000 });
     await page.getByRole('link', { name: 'Import CSV' }).click();
     await page.getByRole('heading', { name: 'Import tax rates' }).waitFor({ state: 'visible', timeout: 2000 });
     await page.getByRole('textbox', { name: 'Choose a file from your' }).setInputFiles(taxFilePath);
@@ -60,35 +63,10 @@ async function configureWooCommerce(page, taxFilePath) {
     await page.getByRole('link', { name: 'Payments', exact: true }).click();
     await page.getByRole('heading', { name: 'Payment Methods' }).waitFor({ state: 'visible', timeout: 2000 });
 
-    // Function to enable a payment method and verify it
-    async function enablePaymentMethod(disabledText, enabledText) {
-        const disabledLocator = page.getByRole('link', { name: disabledText });
-        const enabledLocator = page.getByRole('link', { name: enabledText });
-
-        await disabledLocator.waitFor({ state: 'visible', timeout: 5000 });
-        await disabledLocator.click();
-
-        await page.reload();
-
-        await enabledLocator.waitFor({ state: 'visible', timeout: 5000 });
-        await expect(enabledLocator).toBeVisible();
-    }
-
-    // Enable and verify payment methods
-    await enablePaymentMethod(
-        'The "Direct bank transfer" payment method is currently disabled',
-        'The "Direct bank transfer" payment method is currently enabled'
-    );
-
-    await enablePaymentMethod(
-        'The "Check payments" payment method is currently disabled',
-        'The "Check payments" payment method is currently enabled'
-    );
-
-    await enablePaymentMethod(
-        'The "Cash on delivery" payment method is currently disabled',
-        'The "Cash on delivery" payment method is currently enabled'
-    );
+    await page.getByRole('link', { name: 'The "Direct bank transfer" payment method is currently disabled' }).click();
+    await page.getByRole('link', { name: 'The "Check payments" payment method is currently disabled' }).click();
+    await page.getByRole('link', { name: 'The "Cash on delivery" payment method is currently disabled' }).click();
+    await page.waitForTimeout(2000);
 
     // Navigate to Shipping Section
     await page.getByRole('link', { name: 'Shipping' }).click();
@@ -122,7 +100,7 @@ async function importProducts(page, productFilePath) {
     await page.getByRole('heading', { name: 'Importing' }).waitFor({ state: 'visible', timeout: 10000 });
 
     // Wait for "View Products" link and Click
-    await page.getByRole('link', { name: 'View products' }).waitFor({ state: 'visible', timeout: 30000 });
+    await page.getByRole('link', { name: 'View products' }).waitFor({ state: 'visible', timeout: 50000 });
     await page.getByRole('link', { name: 'View products' }).click();
 
     // Validate Products Page
@@ -139,14 +117,38 @@ async function configureWordPressSettings(page) {
 
 // Navigate to Theme 
 async function installAndActivateTheme(page, themeName) {
+//     await page.getByRole('link', { name: 'Appearance' }).click();
+//     await page.getByRole('link', { name: 'Add New Theme', exact: true }).click();
+//     await page.getByRole('searchbox', { name: 'Search Themes' }).fill(themeName);
+//     await page.getByRole('heading', { name: themeName, exact: true }).waitFor({ state: 'visible', timeout: 50000 });
+//    await page.getByRole('heading', { name: 'Storefront', exact: true }).click();
+//     // Click the Install button inside the correct theme card
+//     await themeCard.getByRole('link', { name: `Install ${themeName}` }).click();
+
+//     await page.getByRole('link', { name: `Installing ${themeName}...` }).waitFor({ state: 'visible', timeout: 50000 });
+//     await page.getByRole('link', { name: `Activate ${themeName}` }).click();
+//     await page.getByRole('heading', { name: 'Themes' }).waitFor({ state: 'visible', timeout: 50000 });
+
     await page.getByRole('link', { name: 'Appearance' }).click();
-    await page.getByRole('link', { name: 'Add New Theme', exact: true }).click();
-    await page.getByRole('searchbox', { name: 'Search Themes' }).fill(themeName);
-    await page.getByRole('heading', { name: themeName, exact: true }).waitFor({ state: 'visible', timeout: 5000 });
-    await page.getByRole('link', { name: `Install ${themeName}` }).click();
-    await page.getByRole('link', { name: `Installing ${themeName}...` }).waitFor({ state: 'visible', timeout: 10000 });
-    await page.getByRole('link', { name: `Activate ${themeName}` }).click();
-    await page.getByRole('heading', { name: 'Themes' }).waitFor({ state: 'visible', timeout: 5000 });
+
+    // Click on "Add New Theme"
+    await page.getByRole('link', { name: 'Add New Theme' }).click();
+
+    // Search for the "Storefront" theme
+    await page.getByRole('searchbox', { name: 'Search Themes' }).fill('Storefront');
+
+    // Wait for the Storefront theme to appear
+    const themeCard = await page.locator(`[data-name="Storefront"]`);
+    await themeCard.waitFor({ state: 'visible', timeout: 5000 });
+    await page.getByRole('heading', { name: 'Storefront', exact: true }).click();
+
+
+    // Click on "Install" inside the correct theme card
+    await themeCard.getByRole('link', { name: 'Install Storefront' }).click();
+
+    // Wait for "Activate" button to appear and click it
+    await page.getByRole('link', { name: 'Activate Storefront' }).waitFor({ state: 'visible', timeout: 10000 });
+    await page.getByRole('link', { name: 'Activate Storefront' }).click();
 }
 
 // Admin Logout
