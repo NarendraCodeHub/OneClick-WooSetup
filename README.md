@@ -37,7 +37,8 @@ To get started with this project, you need to have the following software instal
 4. **Configure WordPress and WooCommerce**
    - Ensure you have a local or remote WordPress setup.
    - Set up a MySQL database for WordPress.
-   - Configure necessary environment variables (such as site URL and credentials) in a `.env` file.
+   - Configure necessary environment variables (such as site URL and credentials) in a `wp_woo_setup.spec.js
+` file.
 
 ## Running the Tests
 
